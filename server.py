@@ -6,11 +6,11 @@ import datetime
 import random
 import codecs
 import sqlite3
-
 # we connect a database with a list of restaurants in Moscow;
 # table format: ID, name, price, location, kitchen, opening hours, address, coordinates
 con = sqlite3.connect('db/restaurants.db')
 cur = con.cursor()
+
 
 # a function that checks whether the user will have time
 # to get to the restaurant;
@@ -24,9 +24,9 @@ def to_go(k):
     cls_hour, cls_min = str(datetime.time(int(cls.split(':')[0]), int(cls.split(':')[-1])))[:-3].split(':')
     # print(opn, cls)
     if int(opn_hour) * 60 + int(opn_min) <= int(dt_hour) * 60 + int(dt_min) <= int(cls_hour) * 60 + int(cls_min):
-        otv = f'сейчас {str(datetime.datetime.now().time())[:-10]}, он закрывается в {"00:00--00:00".split("--")[-1]}'
+        otv = f'Now {str(datetime.datetime.now().time())[:-10]}, it closes at {"00:00--00:00".split("--")[-1]}'
     else:
-        otv = f'График работы ресторана: {"00:00--12:00"}, приходи завтра (или выбери другой ресторан))'
+        otv = f'Restaurant opening hours: {"00:00--12:00"}, come tomorrow (or choose another restaurant))'
     return otv
 
 
@@ -51,6 +51,7 @@ gmd = b'\xF0\x9F\x8E\xB2'
 cherry = b'\xF0\x9F\x8D\x92'
 lucky = b'\xF0\x9F\x8D\x80'
 sad = b'\xF0\x9F\x98\xA2'
+tg = b'\xF0\x9F\x98\x8B'
 
 # creating a bot using the key received from @BotFather
 BOT_TOKEN = '5895368606:AAHgAsVBTDFDLcdoBPQ9lhDsT6HyoBCx9ZA'
@@ -94,8 +95,7 @@ place_keyboard = [['NW', 'N', 'NE'],
                   ['SW', 'S', 'SE']]
 
 # keyboard for selecting an alternative action
-ending_keyboard = [['another option'],
-                   ['go back']]
+ending_keyboard = [['/result']]
 
 # keyboard for selecting the price range
 price_keyboard = [['< 500'],
@@ -137,7 +137,10 @@ recs = ["stop eating, go to the gym, take care of yourself!",
         "Stop teaching artificial intelligence, better learn how to pay it",
         "If you want to know the depth of a person's soul, then spit in his soul and count until you get in the face.",
         f"Wow, you're lucky, now luck will be with you everywhere {codecs.decode(lucky, 'UTF-8')}",
-        "whatever happens, always keep a hare for good luck"]
+        "whatever happens, always keep a hare for good luck",
+        "Bon appetit!",
+        "Watch the film 'Green Elephant' before dinner, highly recommended",
+        'go do your homework, not go to restaurants']
 
 # default data
 ans = ['< 500', 'centre', 'italian']
@@ -168,19 +171,17 @@ async def echo(update, context):
     # checking that a person has chosen a price range that he prefers
     if [update.message.text] in price_keyboard:
         ans[0] = update.message.text
-        print(ans[0])
         await update.message.reply_html(
             rf"Super! what kind of cuisine do you prefer?",
             reply_markup=markup_cuisine
         )
     # checking that a person has chosen a kitchen that he prefers
     elif update.message.text in [f"cafe {codecs.decode(cf, 'UTF-8')}", f"whatever {codecs.decode(wt, 'UTF-8')}",
-                                  f"seafood {codecs.decode(sf, 'UTF-8')}", f"japanese {codecs.decode(jp, 'UTF-8')}",
-                                  f"georgian {codecs.decode(gg, 'UTF-8')}", f"french {codecs.decode(fr, 'UTF-8')}",
-                                  f'indian {codecs.decode(ind, "UTF-8")}', f"russian {codecs.decode(ru, 'UTF-8')}",
-                                  f"italian {codecs.decode(it, 'UTF-8')}"]:
+                                 f"seafood {codecs.decode(sf, 'UTF-8')}", f"japanese {codecs.decode(jp, 'UTF-8')}",
+                                 f"georgian {codecs.decode(gg, 'UTF-8')}", f"french {codecs.decode(fr, 'UTF-8')}",
+                                 f'indian {codecs.decode(ind, "UTF-8")}', f"russian {codecs.decode(ru, 'UTF-8')}",
+                                 f"italian {codecs.decode(it, 'UTF-8')}"]:
         ans[2] = update.message.text.split()[0]
-        print(ans[2])
         await update.message.reply_html(
             rf"great, and where are you?",
             reply_markup=markup_place
@@ -198,13 +199,13 @@ async def echo(update, context):
 
         # restaurant existence check
         if len(result) == 0:
-            await update.message.reply_html(rf"Unfortunately, I didn't find a rest, sorry{codecs.decode(sad, 'UTF-8')}")
+            await update.message.reply_html(
+                rf"Unfortunately, I didn't find a rest, sorry{codecs.decode(sad, 'UTF-8')}",
+                reply_markup=markup_start)
         else:
-            rm = random.randint(0, len(result))
-            await update.message.reply_html(rf'''You better go to the: 
-{result[rm][1]},
-address: {result[rm][6]}
-{to_go(result[rm][5])}''')
+
+            await update.message.reply_html(rf"That's for you {codecs.decode(tg, 'UTF-8')}",
+                                            reply_markup=markup_ending)
 
     # checks if the user wants to roll the dice
     elif update.message.text == f"roll the dice {codecs.decode(gmd, 'UTF-8')}":
@@ -319,7 +320,6 @@ async def set_timer(update, context):
     # and stop the previous one (if there was one)
     job_removed = remove_job_if_exists(str(chat_id), context)
     context.job_queue.run_once(task, TIMER, chat_id=chat_id, name=str(chat_id), data=TIMER)
-
     text = f"I'll be back in {TIMER} sec!"
     if job_removed:
         text += ' Old task deleted.'
@@ -340,7 +340,6 @@ def remove_job_if_exists(name, context):
 
 # We determine the amount that a person is going to spend
 async def price(update, context):
-    print(context)
     global ans
     if len(context.args) != 0:
         if [context.args[0]] in price_keyboard:
@@ -392,6 +391,32 @@ async def close_keyboard(update, context):
     )
 
 
+# Function operation algorithm:
+# The bot "goes" with the address to the geocoder.
+# With the received coordinates, the bot “goes” to the StaticAPI and requests a map image based on them and displays it.
+async def geocoder(update, context):
+    nums = price_help[price_keyboard.index([ans[0]])]
+    result = cur.execute(f"""SELECT * FROM restaurant
+                WHERE prc BETWEEN {nums[0]} and {nums[1]} and geo='{ans[1]}' and cus='{ans[2]}'""").fetchall()
+
+    # randomly choose one of all suitable options
+    rm = random.randint(0, len(result) - 1)
+
+    # get the reverse coordinates of the restaurant
+    coordinates_reversed = ','.join(result[rm][7].split(', ')[::-1])
+    static_api_request = f"http://static-maps.yandex.ru/1.x/?ll={coordinates_reversed}&spn=0.004457,0.00019&l=map"
+    await context.bot.send_photo(
+        update.message.chat_id,
+        # Chat ID. send a picture.
+        # A link to a static API is essentially a link to an image.
+        # Telegram can be transferred directly to it without downloading the card first
+        static_api_request,
+        caption=f"You better go to the: {result[rm][1]}, "
+                f"address: {result[rm][6]}, "
+                f"{to_go(result[rm][5])}"
+    )
+
+
 def main():
     # Creating an Application object.
     # Instead of the word "TOKEN", you need to place the token received from @BotFather
@@ -405,14 +430,14 @@ def main():
     text_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, echo)
 
     # Registering the handler in the application
+    # application.add_handler(CommandHandler("wow", wow )) - example of filling in
     application.add_handler(text_handler)
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help_command", help_command))
     application.add_handler(CommandHandler("set_timer", set_timer))
     application.add_handler(CommandHandler("unset", unset))
     application.add_handler(CommandHandler("close", close_keyboard))
-
-    # application.add_handler(CommandHandler("wow", wow )) - example of filling in
+    application.add_handler(CommandHandler("result", geocoder))
     application.add_handler(CommandHandler("I_know_what_I_want", know))
     application.add_handler(CommandHandler("I_do_not_know_what_I_want", not_know))
 
