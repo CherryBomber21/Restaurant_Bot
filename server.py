@@ -50,6 +50,7 @@ wtf = b'\xE2\x8F\xB3'
 gmd = b'\xF0\x9F\x8E\xB2'
 cherry = b'\xF0\x9F\x8D\x92'
 lucky = b'\xF0\x9F\x8D\x80'
+sad = b'\xF0\x9F\x98\xA2'
 
 # creating a bot using the key received from @BotFather
 BOT_TOKEN = '5895368606:AAHgAsVBTDFDLcdoBPQ9lhDsT6HyoBCx9ZA'
@@ -190,11 +191,17 @@ async def echo(update, context):
                                  'SW', 'S', 'SE']:
         ans[1] = update.message.text
         nums = price_help[price_keyboard.index([ans[0]])]
+
+        # finding all suitable places
         result = cur.execute(f"""SELECT * FROM restaurant
             WHERE prc BETWEEN {nums[0]} and {nums[1]} and geo='{ans[1]}' and cus='{ans[2]}'""").fetchall()
-        rm = random.randint(0, len(result))
-        await update.message.reply_html(
-            rf'''You better go to the: 
+
+        # restaurant existence check
+        if len(result) == 0:
+            await update.message.reply_html(rf"Unfortunately, I didn't find a rest, sorry{codecs.decode(sad, 'UTF-8')}")
+        else:
+            rm = random.randint(0, len(result))
+            await update.message.reply_html(rf'''You better go to the: 
 {result[rm][1]},
 address: {result[rm][6]}
 {to_go(result[rm][5])}''')
