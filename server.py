@@ -23,10 +23,17 @@ def to_go(k):
     opn_hour, opn_min = str(datetime.time(int(opn.split(':')[0]), int(opn.split(':')[-1])))[:-3].split(':')
     cls_hour, cls_min = str(datetime.time(int(cls.split(':')[0]), int(cls.split(':')[-1])))[:-3].split(':')
     # print(opn, cls)
-    if int(opn_hour) * 60 + int(opn_min) <= int(dt_hour) * 60 + int(dt_min) <= int(cls_hour) * 60 + int(cls_min):
-        otv = f'Now {str(datetime.datetime.now().time())[:-10]}, it closes at {"00:00--00:00".split("--")[-1]}'
+    if (int(opn_hour) * 60 + int(opn_min) <= int(dt_hour) * 60 + int(dt_min)) and\
+            (int(opn_hour) * 60 + int(opn_min) >= int(cls_hour) * 60 + int(cls_min)):
+        otv = f'Now {str(datetime.datetime.now().time())[:-10]}, ' \
+              f'it closes at {k.split("--")[-1]}'
+
+    elif int(opn_hour) * 60 + int(opn_min) <= int(dt_hour) * 60 + int(dt_min) <= int(cls_hour) * 60 + int(cls_min):
+        otv = f'Now {str(datetime.datetime.now().time())[:-10]}, ' \
+              f'it closes at {k.split("--")[-1]}'
     else:
-        otv = f'Restaurant opening hours: {"00:00--12:00"}, come tomorrow (or choose another restaurant))'
+        otv = f'Restaurant opening hours: {k}, ' \
+              f'come tomorrow (or choose another restaurant))'
     return otv
 
 
